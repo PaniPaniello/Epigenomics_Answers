@@ -1,0 +1,145 @@
+1. Complete the Git exercise 1 (see hands-on).
+
+https://github.com/PaniPaniello/git_HandsOn
+
+2.Complete the Docker exercise 1 (see hands-on).
+Make a Git repository containing the Docker file that you used to build your image and push it to GitHub. 
+Add the URL that points to your image in DockerHub in the ‘description’ of the Dockerfile.
+
+https://github.com/PaniPaniello/docker_HandsOn
+
+3. Describe the workflow of a ChIP-seq experiment (experimental part)
+
+	1: Use formaldehyde to attach all proteins bound to the DNA through covalent cross-links
+	2: The use of specific antibody allows us to capture the DNA bound protein of interest.
+	3: Then another antibody is used to capture our antiboy with the protein bound and a wash 
+  step is performed.
+	4: The DNA fragments are sequenced, and the reads will be later processed.
+
+4. Why do we need a control in ChIP-seq experiments?
+
+It's important to have controls. One of the reasons is because open chromatin 
+regions are not are not always in the same state and can increase the fasle positive 
+rate. Also platajorm-specific sequencing can increase the nonuniformity of the sample.
+
+5.Explain at which stage of a ChIP-seq processing analysis and how we combine 
+the information of ChIP and control reads. Describe the output files we get if
+we are using the tool MACS2.
+
+At the peak-calling step. In this step we compare the peaks in the Chip files with the 
+controls, and we obtain the positions where the histone maks or the TF are bound in the 
+genome.
+	
+The output obtained are wiggle and BED files. If the data is very large we can obtain
+binary compressed files called BigWig and BigBed. 
+The wiggle files store continuous data of the position and its signal associated
+from the comparison done between experiment files vs control files. 
+The Bed file contains genomic positions (chr, start and end). Other data can be also obtained.
+
+6. What is a pipeline? In the case of the ENCODE ChIP-seq pipeline, which steps of 
+the analysis of ChIP-seq data does it contain?
+
+A pipeline is a sort of different steps or processess with objective to treat inicial objects
+(ex: data) and obtain different outputs that can be continusly used until the final produt is
+obtained. 
+In this case we start with sequenced data in FASTQ files that will be Mapped to obtain BAM files.
+Then the peak calling step is performed to obatin the final product: the bigBed and bigWig files.
+
+7.For the same EN-TEx donor that we have used in the hands-on session in class, use
+the Experiment Search Toolbar from the ENCODE portal to find all released experiments 
+testing chromatin accessibility in stomach and sigmoid_colon (assembly GRCh38).
+Paste here the filters you have applied. How many experiments are there? Paste here 
+the link to download the corresponding metadata file.
+
+Filters:
+- EN-TEx donor: ENCDO451RUA
+- Assay type: DNA accessibility
+- Status: released
+- Genome assembly: GRCh38
+- Biosample term name: stomach AND sigmoid colon
+
+There are only 4 experiments (2 DNase-seq, 2ATAC-seq) with this caracteristics.
+Link: https://www.encodeproject.org/metadata/?type=Experiment&replicates.library.biosample.donor.uuid=d370683e-81e7-473f-8475-7716d027849b&status=released&status=submitted&status=in+progress&assay_slims=DNA+accessibility&assembly=GRCh38&biosample_ontology.term_name=sigmoid+colon&biosample_ontology.term_name=stomach
+
+8. Download the metadata retrieved in point 5. Parse it to get:
+File ID of bigWig file for fold-change over control in sigmoid_colon ATAC-seq experiment
+File ID of bigWig file for fold-change over control in stomach ATAC-seq experiment
+Paste the code used and the corresponding IDs.
+
+../bin/download.metadata.sh "https://www.encodeproject.org/metadata/?type=Experiment&replicates.library.biosample.donor.uuid=d370683e-81e7-473f-8475-7716d027849b&status=released&status=submitted&status=in+progress&assay_slims=DNA+accessibility&assembly=GRCh38&biosample_ontology.term_name=sigmoid+colon&biosample_ontology.term_name=stomach"
+
+grep -F ATAC-seq metadata.tsv | grep -F "fold change" | grep -F "sigmoid colon" |\
+awk 'BEGIN{FS=OFS="\t"; print "file_id\ttissue\ttarget\tsample" } $2=="bigWig" {print $1, $7, $19,"IP"}' > bigWig.colon.ids.txt
+
+grep -F ATAC-seq metadata.tsv | grep -F "fold change" | grep -F "stomach" |\
+awk 'BEGIN{FS=OFS="\t"; print "file_id\ttissue\ttarget\tsample" } $2=="bigWig" {print $1, $7, $19,"IP"}' > bigWig.stomach.ids.txt
+
+file_id tissue  target           sample
+ENCFF997HHO     sigmoid colon    IP
+
+file_id tissue  target           sample
+ENCFF415RKU     stomach          IP
+
+
+9. What is an aggregation plot? Which tool do we use to generate one? Which input data 
+do we need? Have a look at the aggregation plot done during the hands-on. Are the plots consistent
+between the two tissues? Is this what you would expect, given the relationship between H3K4me3 
+and gene expression? Why is it important to know the approximate location of a specific histone 
+mark with respect to the gene?
+
+Aggregation plots are useful to represent and study the distribution of continuous data like for 
+example ChIP-seq signal versus a set of genolmic coordinates. 
+
+We will use an R wrapper that will produce the plot with our input data. As input we will need 
+the bigWig files and a gencode annotation with the genomic coordinates. 
+
+Yes, both aggregation plots are very similar in both tissues, as expected becasue they both share
+an enrichment in H3K4me3 around the TSS. H3K4me3 is reported to be associated with active transcription 
+and we find this mark is enriched around the TSS of the most expressed genes in both tissues.
+
+It is important because if we know the approximate location, we can restrict the signal and asses its 
+function. Also we will be able to plot it and make comparisons that would be impossible if we dont know 
+where the marks are located in relation to the gene.
+
+10. What type of plot are we using to visualize the correlation between two variables?
+Have a look at the plots generated during the hands-on to assess the correlation
+between expression and H3K4me3
+Are these results consistent between the two tissues?
+Would you expect this degree of correlation? Formulate an interpretation of the results
+
+We use a scatterplot with expression H3K4me3 FC.
+
+Yes, they are similar in both tissues having the same shape, Spearman's and Pearson's correlations.
+
+We spected more correlation between both variables due the theorical reltation studied between histon
+marks and active transcription. There can be different reason, for example the fact that gene expression
+does not depend only in histone marks. There are more gene regulatory mechanism.
+
+11.During the hands-on session, we have checked the level of expression of genes with 
+tissue-specific H3K4me3 marking.
+Are these results consistent with the degree of correlation we have observed in point8?
+Do you observe any unexpected behavior?
+How would you relate the presence of genes with tissue-specific marking with the GO
+terms obtained?
+
+Yes, they are consistent. 
+
+The only strange behaviour is that in stomach specific marking we don't see a good correlation
+of H3K4me3 mark in promoters and higher gene expression levels than this obtained in the 
+sigmoid colon specific marking. Also we see that there issome gene expression in stomach 
+when analysing sigmoid colon specific marking.
+In stomach we can see many enriched genes relationed with immune system,, as well as normal functions of the 
+digestive system. In sigmoid colon enrichment we can see less less GO terms enriched. Three of this results
+are related with the nervous system. We need to remember that gastrointestinal tract has a high neuronal
+density.
+
+12. Have a look at the Venn diagram generated in the last task.
+Comment on the number of peaks shared: is there more sharing between peaks of different
+type in the same tissue (e.g.H3K4me3 & POLR2A of stomach), or between peaks of the same
+type in different tissues (e.g.H3K4me3 of stomach and sigmoid colon)?
+
+We have more sharing of peaks from H3K4me3 shared between tissues. Stomach and sigmoid 
+colon H3K4me3 share 5359 peaks while stomach H3K4me3 and POLR2A share only 36. We also
+can see that between tissues POLR2A only share 4 peaks. Finally we can focus on the big
+number of peaks between the mark H3K4me3 and POLR2A in both tissues (5839) which could be 
+interpreted as a high correlation between this two types of marks.
